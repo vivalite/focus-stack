@@ -84,6 +84,12 @@ following options are available:
     If camera exposure is manually controlled, this option can be used
     to skip unnecessary exposure compensation.
 
+  * `--no-transform`:
+    The application tries to resize and rotate the images in a stack to
+    align the content of the images. If you already have aligned images
+    or the content isn't static and confuses the algorithm, this option
+    can be specified to skip the transformation.
+
   * `--align-only`:
     Only align the image stack and exit. Useful for further processing
     of the aligned images with external tools.
@@ -91,6 +97,10 @@ following options are available:
   * `--align-keep-size`:
     Keep original image size by not cropping alignment borders. The
     wavelet processing borders still get cropped, unlike with --nocrop.
+
+  * `--no-align`:
+    Skips the alignment step completely. This will override all other
+    alignment options.
 
 ### Image merge options
 

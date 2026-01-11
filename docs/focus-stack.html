@@ -156,12 +156,20 @@ white balance adjustment.</dd>
 <dt><code>--no-contrast</code></dt>
 <dd>If camera exposure is manually controlled, this option can be used
 to skip unnecessary exposure compensation.</dd>
+<dt><code>--no-transform</code></dt>
+<dd>The application tries to resize and rotate the images in a stack to
+align the content of the images. If you already have aligned images
+or the content isn't static and confuses the algorithm, this option
+can be specified to skip the transformation.</dd>
 <dt><code>--align-only</code></dt>
 <dd>Only align the image stack and exit. Useful for further processing
 of the aligned images with external tools.</dd>
 <dt><code>--align-keep-size</code></dt>
 <dd>Keep original image size by not cropping alignment borders. The
 wavelet processing borders still get cropped, unlike with --nocrop.</dd>
+<dt><code>--no-align</code></dt>
+<dd>Skips the alignment step completely. This will override all other
+alignment options.</dd>
 </dl>
 
 

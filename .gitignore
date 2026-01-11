@@ -1,4 +1,8 @@
 *.o
+*.obj
+*.pdb
 *.kdev4
 build
+gitrev
 Makefile.local
+.vs/

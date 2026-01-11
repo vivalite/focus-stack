@@ -34,6 +34,8 @@ public:
     ALIGN_FULL_RESOLUTION     = 0x04,
     ALIGN_GLOBAL              = 0x08,
     ALIGN_KEEP_SIZE           = 0x10,
+    ALIGN_NO_TRANSFORM        = 0x20,
+    ALIGN_NONE                = 0x40
   };
 
   enum log_level_t
