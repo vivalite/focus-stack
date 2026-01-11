@@ -68,6 +68,7 @@ int main(int argc, const char *argv[])
                  "  --no-transform                Don't attempt to correct image position alignment\n"
                  "  --align-only                  Only align the input image stack and exit\n"
                  "  --align-keep-size             Keep original image size by not cropping alignment borders\n";
+                 "  --no-align                    Skips the alignment completely, overrides all other alignment options\n";
     std::cerr << "\n";
     std::cerr << "Image merge options:\n"
                  "  --consistency=2               Neighbour pixel consistency filter level 0..2 (default 2)\n"
@@ -111,6 +112,7 @@ int main(int argc, const char *argv[])
   if (options.has_flag("--no-contrast"))              flags |= FocusStack::ALIGN_NO_CONTRAST;
   if (options.has_flag("--no-transform"))             flags |= FocusStack::ALIGN_NO_TRANSFORM;
   if (options.has_flag("--align-keep-size"))          flags |= FocusStack::ALIGN_KEEP_SIZE;
+  if (options.has_flag("--no-align"))                 flags  = FocusStack::ALIGN_NONE;
   stack.set_align_flags(flags);
 
   if (options.has_flag("--reference"))
@@ -118,7 +120,7 @@ int main(int argc, const char *argv[])
     stack.set_reference(std::stoi(options.get_arg("--reference")));
   }
 
-  if (options.has_flag("--align-only"))
+  if (options.has_flag("--align-only") && !options.has_flag("--no-align"))
   {
     stack.set_align_only(true);
     stack.set_output(options.get_arg("--output", "aligned_"));

@@ -98,6 +98,10 @@ following options are available:
     Keep original image size by not cropping alignment borders. The
     wavelet processing borders still get cropped, unlike with --nocrop.
 
+  * `--no-align`:
+    Skips the alignment step completely. This will override all other
+    alignment options.
+
 ### Image merge options
 
 * `--consistency`=level:

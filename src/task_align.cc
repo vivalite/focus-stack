@@ -58,7 +58,7 @@ Task_Align::Task_Align(std::shared_ptr<ImgTask> refgray, std::shared_ptr<ImgTask
 
 void Task_Align::task()
 {
-  if (m_refcolor == m_srccolor)
+  if (m_refcolor == m_srccolor || m_flags == FocusStack::ALIGN_NONE)
   {
     m_result = m_srccolor->img();
   }
