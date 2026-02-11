@@ -101,6 +101,12 @@ the source images.
 
 For more information, see the [detailed explanation of algorithms](docs/Algorithms.md).
 
+
+.NET / C# port
+--------------
+A .NET 8 C# port based on OpenCvSharp is available under `dotnet/`.
+See `dotnet/README.md` for usage and current feature coverage.
+
 Building on Linux
 ------------------
 The only dependency is OpenCV, 3.0 or newer, plus the basic build tools:
