@@ -91,6 +91,7 @@ Information options:
     public bool ShowHelp { get; private set; }
     public bool ShowVersion { get; private set; }
     public bool ShowOpenCvVersion { get; private set; }
+    public List<string> UnknownOptions { get; } = [];
 
     public static CliOptions Parse(string[] args)
     {
@@ -131,8 +132,13 @@ Information options:
             else if (arg.StartsWith("--batchsize=")) options.BatchSize = ParseInt(arg[12..], "batchsize", 1, 1024);
             else if (arg == "--no-opencl") options.DisableOpenCl = true;
             else if (arg.StartsWith("--wait-images=")) options.WaitImagesSeconds = ParseDouble(arg[14..], "wait-images", 0.0, 36000.0);
-            else if (arg.StartsWith("--")) throw new ArgumentException($"Unknown option: {arg}");
+            else if (arg.StartsWith("--")) options.UnknownOptions.Add(arg);
             else options.InputFiles.Add(arg);
+        }
+
+        if (options.AlignOnly && !options.DisableAlignment && !args.Any(a => a.StartsWith("--output=")))
+        {
+            options.OutputPath = "aligned_";
         }
 
         return options;
