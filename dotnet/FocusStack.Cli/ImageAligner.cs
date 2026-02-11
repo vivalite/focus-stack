@@ -194,7 +194,7 @@ public static class ImageAligner
     private static Mat ResizeFloat(Mat input, double scale)
     {
         var resized = new Mat();
-        Cv2.Resize(input, resized, Size.Zero, scale, scale, InterpolationFlags.Area);
+        Cv2.Resize(input, resized, new Size(), scale, scale, InterpolationFlags.Area);
         return resized;
     }
 
