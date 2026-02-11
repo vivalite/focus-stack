@@ -18,12 +18,6 @@ public static class Program
             return 2;
         }
 
-        if (options.ShowHelp)
-        {
-            Console.WriteLine(CliOptions.HelpText);
-            return 0;
-        }
-
         if (options.ShowVersion)
         {
             Console.WriteLine("focus-stack-cs 0.2.0");
@@ -36,10 +30,15 @@ public static class Program
             return 0;
         }
 
-        if (options.InputFiles.Count == 0)
+        if (options.ShowHelp || options.InputFiles.Count < 2)
         {
-            Console.Error.WriteLine("No input files provided.");
-            return 2;
+            Console.WriteLine(CliOptions.HelpText);
+            return options.ShowHelp ? 0 : 1;
+        }
+
+        if (options.UnknownOptions.Count > 0)
+        {
+            Console.Error.WriteLine($"Warning: unknown options: {string.Join(" ", options.UnknownOptions)}");
         }
 
         try
@@ -51,9 +50,13 @@ public static class Program
                 Cv2.SetNumThreads(options.Threads);
             }
 
-            if (options.DisableOpenCl && options.Verbose)
+            if (options.DisableOpenCl)
             {
-                Console.WriteLine("--no-opencl requested (OpenCV OpenCL toggle is runtime-dependent in OpenCvSharp build).");
+                Cv2.SetUseOpenCL(false);
+                if (options.Verbose)
+                {
+                    Console.WriteLine("OpenCL disabled");
+                }
             }
 
             using var inputStack = ImageStack.Load(options.InputFiles);
