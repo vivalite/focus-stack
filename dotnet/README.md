@@ -2,6 +2,8 @@
 
 This folder contains a .NET 8 C# port of the `focus-stack` CLI built on top of **OpenCvSharp**.
 
+Native OpenCV runtime packages are included for both **Windows** (`OpenCvSharp4.runtime.win`) and **Ubuntu 22.04 x64** (`OpenCvSharp4.runtime.ubuntu.22.04-x64`).
+
 ## What is currently ported
 
 - CLI-oriented batch processing flow (`input -> align -> merge -> optional depthmap`).
