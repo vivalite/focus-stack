@@ -2,7 +2,7 @@
 
 This folder contains a .NET 8 C# port of the `focus-stack` CLI built on top of **OpenCvSharp**.
 
-Native OpenCV runtime packages are included for both **Windows** (`OpenCvSharp4.runtime.win`) and **Ubuntu 22.04 x64** (`OpenCvSharp4.runtime.ubuntu.22.04-x64`).
+Native OpenCV runtime packages are selected by OS in the project file: **Windows** uses `OpenCvSharp4.runtime.win` and **Linux** uses `OpenCvSharp4.runtime.ubuntu.22.04-x64`.
 
 ## What is currently ported
 
