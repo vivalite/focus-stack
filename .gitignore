@@ -6,3 +6,7 @@ build
 gitrev
 Makefile.local
 .vs/
+
+# .NET build output
+dotnet/**/bin/
+dotnet/**/obj/
