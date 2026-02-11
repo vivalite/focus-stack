@@ -42,7 +42,7 @@ public static class FocusMerger
             for (var i = 1; i < responseMaps.Count; i++)
             {
                 using var mask = new Mat();
-                Cv2.Compare(responseMaps[i], bestResponse, mask, CmpTypes.GreaterThan);
+                Cv2.Compare(responseMaps[i], bestResponse, mask, CmpType.GT);
                 responseMaps[i].CopyTo(bestResponse, mask);
                 labels.SetTo(new Scalar(i), mask);
             }
@@ -53,7 +53,7 @@ public static class FocusMerger
             for (var i = 0; i < frames.Count; i++)
             {
                 using var mask = new Mat();
-                Cv2.Compare(labels, i, mask, CmpTypes.Equal);
+                Cv2.Compare(labels, i, mask, CmpType.EQ);
                 frames[i].CopyTo(merged, mask);
             }
 

@@ -49,7 +49,7 @@ public static class ImageAligner
     private static void AlignOne(Mat movingColor, Mat targetGray32)
     {
         using var movingGray32 = ToGray32(movingColor);
-        using var warp = Mat.Eye(2, 3, MatType.CV_32FC1);
+        using var warp = Mat.Eye(2, 3, MatType.CV_32FC1).ToMat();
         var criteria = new TermCriteria(CriteriaTypes.Eps | CriteriaTypes.Count, 100, 1e-6);
 
         Cv2.FindTransformECC(
