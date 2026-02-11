@@ -28,33 +28,19 @@ public static class FocusMerger
         var rows = frames[0].Rows;
         var cols = frames[0].Cols;
 
-        var responseMaps = new List<Mat>(frames.Count);
+        ComputeFocusLabels(frames, out var labels, out var bestResponse);
         try
         {
-            foreach (var frame in frames)
-            {
-                responseMaps.Add(FocusMeasure(frame));
-            }
-
-            var labels = new Mat(rows, cols, MatType.CV_8U, Scalar.All(0));
-            var bestResponse = responseMaps[0].Clone();
-
-            for (var i = 1; i < responseMaps.Count; i++)
-            {
-                using var mask = new Mat();
-                Cv2.Compare(responseMaps[i], bestResponse, mask, CmpType.GT);
-                responseMaps[i].CopyTo(bestResponse, mask);
-                labels.SetTo(new Scalar(i), mask);
-            }
-
             ApplyConsistencyFilter(labels, options.ConsistencyLevel);
 
-            var merged = new Mat(rows, cols, MatType.CV_8UC3, Scalar.All(0));
-            for (var i = 0; i < frames.Count; i++)
+            Mat merged;
+            if (options.MergeMethod == MergeMethod.Wavelet)
             {
-                using var mask = new Mat();
-                Cv2.Compare(labels, i, mask, CmpType.EQ);
-                frames[i].CopyTo(merged, mask);
+                merged = MergeByWavelet(frames, options.WaveletLevels);
+            }
+            else
+            {
+                merged = MergeByLabelSelection(frames, labels, rows, cols);
             }
 
             if (options.SaveSteps)
@@ -69,10 +55,38 @@ public static class FocusMerger
             }
 
             var depthMap = DepthMapFromLabels(labels, bestResponse, merged, frames.Count, options);
-            bestResponse.Dispose();
-            labels.Dispose();
-
             return new MergeResult(merged, depthMap);
+        }
+        finally
+        {
+            labels.Dispose();
+            bestResponse.Dispose();
+        }
+    }
+
+    private static void ComputeFocusLabels(IReadOnlyList<Mat> frames, out Mat labels, out Mat bestResponse)
+    {
+        var rows = frames[0].Rows;
+        var cols = frames[0].Cols;
+
+        var responseMaps = new List<Mat>(frames.Count);
+        try
+        {
+            foreach (var frame in frames)
+            {
+                responseMaps.Add(FocusMeasure(frame));
+            }
+
+            labels = new Mat(rows, cols, MatType.CV_8U, Scalar.All(0));
+            bestResponse = responseMaps[0].Clone();
+
+            for (var i = 1; i < responseMaps.Count; i++)
+            {
+                using var mask = new Mat();
+                Cv2.Compare(responseMaps[i], bestResponse, mask, CmpType.GT);
+                responseMaps[i].CopyTo(bestResponse, mask);
+                labels.SetTo(new Scalar(i), mask);
+            }
         }
         finally
         {
@@ -81,6 +95,144 @@ public static class FocusMerger
                 response.Dispose();
             }
         }
+    }
+
+    private static Mat MergeByLabelSelection(IReadOnlyList<Mat> frames, Mat labels, int rows, int cols)
+    {
+        var merged = new Mat(rows, cols, MatType.CV_8UC3, Scalar.All(0));
+        for (var i = 0; i < frames.Count; i++)
+        {
+            using var mask = new Mat();
+            Cv2.Compare(labels, i, mask, CmpType.EQ);
+            frames[i].CopyTo(merged, mask);
+        }
+
+        return merged;
+    }
+
+    private static Mat MergeByWavelet(IReadOnlyList<Mat> frames, int levels)
+    {
+        var floatFrames = new List<Mat>(frames.Count);
+        var pyramids = new List<List<Mat>>(frames.Count);
+        try
+        {
+            foreach (var frame in frames)
+            {
+                var f32 = new Mat();
+                frame.ConvertTo(f32, MatType.CV_32FC3, 1.0 / 255.0);
+                floatFrames.Add(f32);
+                pyramids.Add(BuildLaplacianPyramid(f32, levels));
+            }
+
+            var mergedPyramid = new List<Mat>(levels + 1);
+            for (var level = 0; level <= levels; level++)
+            {
+                mergedPyramid.Add(SelectBestCoefficientsAtLevel(pyramids, level));
+            }
+
+            var reconstructed = ReconstructFromLaplacianPyramid(mergedPyramid);
+            Cv2.Min(reconstructed, new Scalar(1, 1, 1), reconstructed);
+            Cv2.Max(reconstructed, Scalar.All(0), reconstructed);
+
+            var outMat = new Mat();
+            reconstructed.ConvertTo(outMat, MatType.CV_8UC3, 255.0);
+
+            reconstructed.Dispose();
+            foreach (var m in mergedPyramid)
+            {
+                m.Dispose();
+            }
+
+            return outMat;
+        }
+        finally
+        {
+            foreach (var p in pyramids)
+            {
+                foreach (var m in p)
+                {
+                    m.Dispose();
+                }
+            }
+
+            foreach (var m in floatFrames)
+            {
+                m.Dispose();
+            }
+        }
+    }
+
+    private static List<Mat> BuildLaplacianPyramid(Mat src, int levels)
+    {
+        var gaussian = new List<Mat>(levels + 1) { src.Clone() };
+        for (var i = 0; i < levels; i++)
+        {
+            var next = new Mat();
+            Cv2.PyrDown(gaussian[i], next);
+            gaussian.Add(next);
+        }
+
+        var laplacian = new List<Mat>(levels + 1);
+        for (var i = 0; i < levels; i++)
+        {
+            using var up = new Mat();
+            Cv2.PyrUp(gaussian[i + 1], up, gaussian[i].Size());
+            var lap = new Mat();
+            Cv2.Subtract(gaussian[i], up, lap);
+            laplacian.Add(lap);
+        }
+
+        laplacian.Add(gaussian[^1].Clone());
+
+        foreach (var g in gaussian)
+        {
+            g.Dispose();
+        }
+
+        return laplacian;
+    }
+
+    private static Mat SelectBestCoefficientsAtLevel(IReadOnlyList<List<Mat>> pyramids, int level)
+    {
+        var best = pyramids[0][level].Clone();
+        using var bestScore = CoefficientScore(best);
+
+        for (var i = 1; i < pyramids.Count; i++)
+        {
+            var candidate = pyramids[i][level];
+            using var candidateScore = CoefficientScore(candidate);
+            using var mask = new Mat();
+            Cv2.Compare(candidateScore, bestScore, mask, CmpType.GT);
+            candidate.CopyTo(best, mask);
+            candidateScore.CopyTo(bestScore, mask);
+        }
+
+        return best;
+    }
+
+    private static Mat CoefficientScore(Mat coeff)
+    {
+        using var absCoeff = new Mat();
+        Cv2.Absdiff(coeff, Scalar.All(0), absCoeff);
+        var score = new Mat();
+        Cv2.CvtColor(absCoeff, score, ColorConversionCodes.BGR2GRAY);
+        return score;
+    }
+
+    private static Mat ReconstructFromLaplacianPyramid(IReadOnlyList<Mat> pyramid)
+    {
+        var current = pyramid[^1].Clone();
+        for (var i = pyramid.Count - 2; i >= 0; i--)
+        {
+            using var up = new Mat();
+            Cv2.PyrUp(current, up, pyramid[i].Size());
+            var next = new Mat();
+            Cv2.Add(up, pyramid[i], next);
+            current.Dispose();
+            current = next;
+        }
+
+        return current;
     }
 
     private static Mat FocusMeasure(Mat frame)

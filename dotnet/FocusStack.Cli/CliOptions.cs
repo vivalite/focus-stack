@@ -27,6 +27,8 @@ Image alignment options:
 Image merge options:
   --consistency=2               Neighbour consistency filter level 0..2
   --denoise=1.0                 Merged image denoise level
+  --merge-method=wavelet        Merge method: wavelet or laplacian
+  --wavelet-levels=5            Wavelet pyramid levels (default 5)
 
 Depth map options:
   --depthmap-threshold=10       Threshold to accept depth points (0-255)
@@ -70,6 +72,8 @@ Information options:
 
     public int ConsistencyLevel { get; private set; } = 2;
     public double DenoiseLevel { get; private set; } = 1.0;
+    public MergeMethod MergeMethod { get; private set; } = MergeMethod.Wavelet;
+    public int WaveletLevels { get; private set; } = 5;
 
     public int DepthMapThreshold { get; private set; } = 10;
     public int DepthMapSmoothXy { get; private set; } = 20;
@@ -115,6 +119,8 @@ Information options:
             else if (arg == "--no-align") options.DisableAlignment = true;
             else if (arg.StartsWith("--consistency=")) options.ConsistencyLevel = ParseInt(arg[14..], "consistency", 0, 2);
             else if (arg.StartsWith("--denoise=")) options.DenoiseLevel = ParseDouble(arg[10..], "denoise", 0.0, 100.0);
+            else if (arg.StartsWith("--merge-method=")) options.MergeMethod = ParseMergeMethod(arg[15..]);
+            else if (arg.StartsWith("--wavelet-levels=")) options.WaveletLevels = ParseInt(arg[17..], "wavelet-levels", 1, 10);
             else if (arg.StartsWith("--depthmap-threshold=")) options.DepthMapThreshold = ParseInt(arg[21..], "depthmap-threshold", 0, 255);
             else if (arg.StartsWith("--depthmap-smooth-xy=")) options.DepthMapSmoothXy = ParseInt(arg[21..], "depthmap-smooth-xy", 0, 1000);
             else if (arg.StartsWith("--depthmap-smooth-z=")) options.DepthMapSmoothZ = ParseInt(arg[20..], "depthmap-smooth-z", 0, 1000);
@@ -146,6 +152,17 @@ Information options:
         return parsed;
     }
 
+
+    private static MergeMethod ParseMergeMethod(string value)
+    {
+        return value.ToLowerInvariant() switch
+        {
+            "wavelet" => MergeMethod.Wavelet,
+            "laplacian" => MergeMethod.Laplacian,
+            _ => throw new ArgumentException($"Invalid --merge-method value: {value}")
+        };
+    }
+
     private static ViewPoint3D ParseViewPoint(string value)
     {
         var parts = value.Split(':');
@@ -165,3 +182,9 @@ Information options:
 }
 
 public readonly record struct ViewPoint3D(double X, double Y, double Z, double ZScale);
+
+public enum MergeMethod
+{
+    Wavelet,
+    Laplacian
+}

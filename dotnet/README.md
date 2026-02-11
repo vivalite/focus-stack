@@ -10,7 +10,7 @@ Compared to the initial port, the CLI now supports a much broader set of options
 
 - Output flags: `--output`, `--depthmap`, `--3dview`, `--save-steps`, `--jpgquality`, `--nocrop`
 - Alignment flags: `--reference`, `--global-align`, `--full-resolution-align`, `--no-whitebalance`, `--no-contrast`, `--no-transform`, `--align-only`, `--align-keep-size`, `--no-align`
-- Merge flags: `--consistency`, `--denoise`
+- Merge flags: `--consistency`, `--denoise`, `--merge-method`, `--wavelet-levels`
 - Depth map flags: `--depthmap-threshold`, `--depthmap-smooth-xy`, `--depthmap-smooth-z`, `--remove-bg`, `--halo-radius`, `--3dviewpoint`
 - Performance/info flags: `--threads`, `--batchsize`, `--no-opencl`, `--wait-images`, `--verbose`, `--opencv-version`
 
@@ -29,3 +29,6 @@ dotnet run --project dotnet/FocusStack.Cli/FocusStack.Cli.csproj -- \
   --3dview=3dview.png \
   examples/pcb/pcb_001.jpg examples/pcb/pcb_002.jpg examples/pcb/pcb_003.jpg
 ```
+
+
+By default, the C# port now uses a **wavelet/Laplacian pyramid coefficient-selection merge** (`--merge-method=wavelet`) to better match the original software's wavelet-based focus stacking approach.
