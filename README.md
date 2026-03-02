@@ -5,6 +5,8 @@ This project implements a cross-platform tool for focus stacking images.
 The application takes a set of images captured at different focus distances
 and combines them so that the complete subject is in focus.
 
+This version modified from original, adding tile based tilt compensation and auto z-range selection.
+
 Installation
 ------------
 Binary packages for Windows 10, Ubuntu 20.04 and Mac OS X are available on the
@@ -59,6 +61,21 @@ For advanced usage, see `--help` for list of all options or [check the manual](d
       --remove-bg=0                 Positive value removes black background, negative white
       --halo-radius=20              Radius of halo effects to remove from depthmap
       --3dviewpoint=x:y:z:zscale    Viewpoint for 3D view (default 1:1:1:2)
+
+    Tilt-compensation options:
+      --tilt=2x2                    Enable tilt-compensated tiling (e.g. 2x2 or 3x3)
+      --tilt-overlap=0.15           Tile overlap fraction (0.0..0.45, default 0.15)
+      --tilt-cache=1                Cache decoded slices used by any tile (faster, uses RAM; default 1)
+      --tilt-cache-maxmb=1200       Disable cache if estimated RAM exceeds this (default 1200)
+      --tilt-autorange=1            Auto-select best focus band per tile (default 1)
+      --tilt-tile-rel=0.45          Per-tile relative threshold vs peak (default 0.45)
+      --tilt-global-rel=0.30        Global relative threshold vs peak (default 0.30)
+      --tilt-smooth=3               Median smoothing window along Z (default 3)
+      --tilt-minslices=3            Minimum slices kept per tile (default 3)
+      --tilt-maxslices=13           Maximum slices kept per tile (default 13; set -1 for unlimited)
+      --tilt-weak=0.25              Weak-tile fallback to global band (default 0.25)
+      --tilt-halfwindow=3           Legacy fixed window: (2*halfwindow+1) slices around best focus (default 3; set -1 to use all)
+      --tilt-focus-maxdim=512       Max dimension for focus metric downsampling (default 512)
 
     Performance options:
       --threads=2                   Select number of threads to use (default number of CPUs + 1)
