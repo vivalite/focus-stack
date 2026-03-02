@@ -11,6 +11,7 @@ Task_LoadImg::Task_LoadImg(std::string filename, float wait_images)
   m_filename = filename;
   m_name = "Load " + filename;
   m_wait_images = wait_images;
+  m_memimg = false;
   m_wait_images_until = std::chrono::system_clock::now()
                       + std::chrono::milliseconds((int)(m_wait_images * 1000));
 }
@@ -19,8 +20,13 @@ Task_LoadImg::Task_LoadImg(std::string name, const cv::Mat &img)
 {
   m_filename = name;
   m_name = "Memory image " + name;
-  m_result = img.clone();
+  // Important for performance in --tilt mode:
+  // Do NOT clone here. The pipeline only needs read-only access to the input image,
+  // and will allocate its own padded copy when wavelet expansion is needed.
+  // This avoids an extra full-frame copy for each input slice.
+  m_result = img;
   m_wait_images = 0;
+  m_memimg = true;
   m_wait_images_until = std::chrono::system_clock::now()
                       + std::chrono::milliseconds((int)(m_wait_images * 1000));
 }
@@ -48,20 +54,30 @@ bool Task_LoadImg::ready_to_run()
 
 void Task_LoadImg::task()
 {
-  if (!m_result.data)
+  if (!m_memimg)
   {
-    m_result = cv::imread(m_filename, cv::IMREAD_ANYCOLOR);
-  }
+    if (!m_result.data)
+    {
+      m_result = cv::imread(m_filename, cv::IMREAD_ANYCOLOR);
+    }
 
-  while (!m_result.data && std::chrono::system_clock::now() < m_wait_images_until)
-  {
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    m_result = cv::imread(m_filename, cv::IMREAD_ANYCOLOR);
-  }
+    while (!m_result.data && std::chrono::system_clock::now() < m_wait_images_until)
+    {
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      m_result = cv::imread(m_filename, cv::IMREAD_ANYCOLOR);
+    }
 
-  if (!m_result.data)
+    if (!m_result.data)
+    {
+      throw std::runtime_error("Could not load " + m_filename);
+    }
+  }
+  else
   {
-    throw std::runtime_error("Could not load " + m_filename);
+    if (!m_result.data)
+    {
+      throw std::runtime_error("No image data for " + m_filename);
+    }
   }
 
   m_orig_size = m_result.size();
@@ -71,7 +87,8 @@ void Task_LoadImg::task()
   cv::Size expanded;
   int levels = Task_Wavelet::levels_for_size(m_orig_size, &expanded);
   std::string name = basename();
-  m_logger->verbose("%s has resolution %dx%d, using %d wavelet levels and expanding to %dx%d\n",
+  m_logger->verbose("%s has resolution %dx%d, using %d wavelet levels and expanding to %dx%d
+",
                     name.c_str(), m_orig_size.width, m_orig_size.height, levels,
                     expanded.width, expanded.height);
 
@@ -90,3 +107,4 @@ void Task_LoadImg::task()
     m_valid_area = cv::Rect(cv::Point(expand_x / 2, expand_y / 2), m_orig_size);
   }
 }
+
